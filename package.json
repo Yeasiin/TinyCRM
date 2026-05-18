@@ -1,0 +1,20 @@
+{
+  "name": "my-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "bun run --cwd apps/frontend build && bun run --cwd apps/backend build",
+    "dev": "concurrently \"bun run --cwd apps/frontend dev\" \"bun run --cwd apps/backend dev\" -n frontend,backend -c cyan,magenta",
+    "lint": "bun run --cwd apps/frontend lint && bun run --cwd apps/backend lint"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}
