@@ -32,8 +32,7 @@ export const queryKeys = {
     all: ["activities"] as const,
     list: (filters: Record<string, any>) => ["activities", "list", filters] as const,
   },
-  attachments: {
-    all: ["attachments"] as const,
-    list: (filters: Record<string, any>) => ["attachments", "list", filters] as const,
+  sheets: {
+    all: ["sheets"] as const,
   },
 } as const;

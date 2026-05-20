@@ -1,16 +1,5 @@
-import { db } from "@/db";
-import { leads, activities, deals } from "@/db/schema";
-import {
-  eq,
-  and,
-  isNull,
-  ilike,
-  or,
-  desc,
-  count,
-  SQL,
-} from "drizzle-orm";
 import { AppError } from "@/lib/error-handler";
+import * as store from "@/lib/sheets-store";
 import type { CreateLeadInput, UpdateLeadInput } from "./leads.schema";
 
 export interface ListLeadsFilters {
@@ -18,169 +7,180 @@ export interface ListLeadsFilters {
   search?: string;
   page?: number;
   limit?: number;
-  assignedTo?: string;
 }
 
-export async function listLeads(userId: string, filters: ListLeadsFilters) {
-  const { status, search, page = 1, limit = 20, assignedTo } = filters;
-  const offset = (page - 1) * limit;
-
-  const conditions: SQL[] = [eq(leads.userId, userId), isNull(leads.deletedAt)];
-
-  if (status) conditions.push(eq(leads.status, status as any));
-  if (assignedTo) conditions.push(eq(leads.assignedTo, assignedTo));
-  if (search) {
-    const searchCondition = or(
-      ilike(leads.name, `%${search}%`),
-      ilike(leads.email, `%${search}%`),
-      ilike(leads.company, `%${search}%`),
-    );
-    if (searchCondition) conditions.push(searchCondition);
-  }
-
-  const where = and(...conditions);
-
-  const [data, totalResult] = await Promise.all([
-    db.query.leads.findMany({
-      where,
-      limit,
-      offset,
-      orderBy: desc(leads.createdAt),
-      with: { assignee: true },
-    }),
-    db.select({ count: count() }).from(leads).where(where),
-  ]);
-
-  const total = totalResult[0]?.count ?? 0;
-
-  return {
-    data,
-    meta: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
-}
-
-export async function getLead(userId: string, leadId: string) {
-  const lead = await db.query.leads.findFirst({
-    where: and(
-      eq(leads.id, leadId),
-      eq(leads.userId, userId),
-      isNull(leads.deletedAt),
-    ),
-    with: { assignee: true },
+export async function listLeads(
+  accessToken: string,
+  spreadsheetId: string,
+  userId: string,
+  filters: ListLeadsFilters,
+) {
+  const { status, search, page = 1, limit = 20 } = filters;
+  const result = await store.list(accessToken, spreadsheetId, "Leads", {
+    userId,
+    status,
+    search,
+  }, {
+    sortBy: "createdAt",
+    sortOrder: "desc",
+    page,
+    limit,
   });
+  return result;
+}
 
-  if (!lead) throw new AppError("Lead not found", 404);
+export async function getLead(
+  accessToken: string,
+  spreadsheetId: string,
+  userId: string,
+  leadId: string,
+) {
+  const lead = await store.getById(accessToken, spreadsheetId, "Leads", leadId);
+  if (!lead || lead.userId !== userId) {
+    throw new AppError("Lead not found", 404);
+  }
   return lead;
 }
 
-export async function createLead(userId: string, input: CreateLeadInput) {
-  const values: any = {
+export async function createLead(
+  accessToken: string,
+  spreadsheetId: string,
+  userId: string,
+  input: CreateLeadInput,
+) {
+  const lead = await store.create(accessToken, spreadsheetId, "Leads", {
     userId,
     name: input.name,
     status: input.status ?? "new",
-  };
+    email: input.email || null,
+    phone: input.phone || null,
+    company: input.company || null,
+    source: input.source || null,
+    estimatedValue: input.estimatedValue ?? null,
+  });
 
-  if (input.email) values.email = input.email;
-  if (input.phone) values.phone = input.phone;
-  if (input.company) values.company = input.company;
-  if (input.source) values.source = input.source;
-  if (input.estimatedValue !== undefined) values.estimatedValue = input.estimatedValue;
-  if (input.assignedTo) values.assignedTo = input.assignedTo;
-
-  const [lead] = await db.insert(leads).values(values).returning();
-
-  // Auto-create a deal for this lead so it appears in the pipeline
-  await db.insert(deals).values({
+  // Auto-create a deal for this lead
+  await store.create(accessToken, spreadsheetId, "Deals", {
     userId,
     leadId: lead.id,
     title: `${lead.name} - Deal`,
     stage: lead.status ?? "new",
-    value: lead.estimatedValue,
-    assignedTo: lead.assignedTo,
+    value: lead.estimatedValue ?? null,
+    customerId: null,
+    closedAt: null,
   });
 
-  await db.insert(activities).values({
+  // Log activity
+  await store.create(accessToken, spreadsheetId, "Activities", {
     userId,
     leadId: lead.id,
+    customerId: null,
+    dealId: null,
+    taskId: null,
     type: "lead_created",
     description: `Lead "${lead.name}" was created`,
+    metadata: null,
   });
 
   return lead;
 }
 
 export async function updateLead(
+  accessToken: string,
+  spreadsheetId: string,
   userId: string,
   leadId: string,
   input: UpdateLeadInput,
 ) {
-  const existing = await getLead(userId, leadId);
+  const existing = await getLead(accessToken, spreadsheetId, userId, leadId);
 
-  const values: any = {};
-  if (input.name !== undefined) values.name = input.name;
-  if (input.email !== undefined) values.email = input.email || null;
-  if (input.phone !== undefined) values.phone = input.phone;
-  if (input.company !== undefined) values.company = input.company;
-  if (input.status !== undefined) values.status = input.status;
-  if (input.source !== undefined) values.source = input.source;
-  if (input.estimatedValue !== undefined) values.estimatedValue = input.estimatedValue;
-  if (input.assignedTo !== undefined) values.assignedTo = input.assignedTo || null;
+  const updates: Record<string, any> = {};
+  if (input.name !== undefined) updates.name = input.name;
+  if (input.email !== undefined) updates.email = input.email || null;
+  if (input.phone !== undefined) updates.phone = input.phone || null;
+  if (input.company !== undefined) updates.company = input.company || null;
+  if (input.status !== undefined) updates.status = input.status;
+  if (input.source !== undefined) updates.source = input.source || null;
+  if (input.estimatedValue !== undefined) updates.estimatedValue = input.estimatedValue;
 
-  const [updated] = await db
-    .update(leads)
-    .set(values)
-    .where(and(eq(leads.id, leadId), eq(leads.userId, userId)))
-    .returning();
+  const updated = await store.update(
+    accessToken,
+    spreadsheetId,
+    "Leads",
+    leadId,
+    updates,
+  );
 
   // Sync linked deal stage if status changed
   if (input.status && input.status !== existing.status) {
-    await db
-      .update(deals)
-      .set({ stage: input.status as any })
-      .where(and(eq(deals.leadId, leadId), eq(deals.userId, userId)));
-
-    await db.insert(activities).values({
-      userId,
+    const linkedDeal = await store.getByLeadId(
+      accessToken,
+      spreadsheetId,
+      "Deals",
       leadId,
-      type: "status_change",
-      description: `Lead status changed from ${existing.status} to ${input.status}`,
-      metadata: { from: existing.status, to: input.status },
-    });
+    );
+    if (linkedDeal && !linkedDeal.deletedAt) {
+      await store.update(accessToken, spreadsheetId, "Deals", linkedDeal.id, {
+        stage: input.status,
+        closedAt: ["won", "lost"].includes(input.status) ? new Date().toISOString() : linkedDeal.closedAt,
+      });
+
+      await store.create(accessToken, spreadsheetId, "Activities", {
+        userId,
+        leadId,
+        customerId: null,
+        dealId: linkedDeal.id,
+        taskId: null,
+        type: "status_change",
+        description: `Lead status changed from ${existing.status} to ${input.status}`,
+        metadata: JSON.stringify({ from: existing.status, to: input.status }),
+      });
+    }
   }
 
-  await db.insert(activities).values({
+  await store.create(accessToken, spreadsheetId, "Activities", {
     userId,
     leadId,
+    customerId: null,
+    dealId: null,
+    taskId: null,
     type: "lead_updated",
     description: `Lead "${updated.name}" was updated`,
+    metadata: null,
   });
 
   return updated;
 }
 
-export async function deleteLead(userId: string, leadId: string) {
-  await getLead(userId, leadId);
+export async function deleteLead(
+  accessToken: string,
+  spreadsheetId: string,
+  userId: string,
+  leadId: string,
+) {
+  await getLead(accessToken, spreadsheetId, userId, leadId);
 
-  await db
-    .update(leads)
-    .set({ deletedAt: new Date() })
-    .where(and(eq(leads.id, leadId), eq(leads.userId, userId)));
+  await store.softDelete(accessToken, spreadsheetId, "Leads", leadId);
 
   // Soft-delete linked deals
-  await db
-    .update(deals)
-    .set({ deletedAt: new Date() })
-    .where(and(eq(deals.leadId, leadId), eq(deals.userId, userId)));
+  const linkedDeal = await store.getByLeadId(
+    accessToken,
+    spreadsheetId,
+    "Deals",
+    leadId,
+  );
+  if (linkedDeal && !linkedDeal.deletedAt) {
+    await store.softDelete(accessToken, spreadsheetId, "Deals", linkedDeal.id);
+  }
 
-  await db.insert(activities).values({
+  await store.create(accessToken, spreadsheetId, "Activities", {
     userId,
     leadId,
+    customerId: null,
+    dealId: null,
+    taskId: null,
     type: "lead_deleted",
     description: "Lead was deleted",
+    metadata: null,
   });
 }

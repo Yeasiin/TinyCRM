@@ -1,9 +1,21 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
 import { queryKeys } from "@/lib/query-keys";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  fetchGoogleAccessToken,
+  getSpreadsheetId,
+  getLastSpreadsheetId,
+  getLastSpreadsheetName,
+  setSpreadsheetId,
+  setSpreadsheetName,
+  setLastSpreadsheetId,
+  setLastSpreadsheetName,
+  API_URL,
+} from "@/lib/api-client";
 
 interface SessionData {
   user: {
@@ -36,6 +48,10 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const restoredRef = useRef(false);
+
   const { data: session, isPending } = useQuery<SessionData | null>({
     queryKey: queryKeys.auth.session,
     queryFn: async () => {
@@ -43,6 +59,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return data;
     },
   });
+
+  // Prefetch Google access token when session is available
+  useEffect(() => {
+    if (session?.user) {
+      fetchGoogleAccessToken().catch(() => {});
+    }
+  }, [session?.user]);
+
+  // Auto-restore last spreadsheet on login
+  const restoreMutation = useMutation({
+    mutationFn: async (spreadsheetId: string) => {
+      const res = await fetch(`${API_URL}/api/crm/sheets/select`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ spreadsheetId }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Failed to restore sheet" }));
+        throw new Error(err.error || "Failed to restore sheet");
+      }
+      return res.json() as Promise<{ success: boolean; sheet: { id: string; name: string } }>;
+    },
+    onSuccess: (data) => {
+      setSpreadsheetId(data.sheet.id);
+      setSpreadsheetName(data.sheet.name);
+    },
+    onError: () => {
+      setLastSpreadsheetId(null);
+      setLastSpreadsheetName(null);
+    },
+  });
+
+  useEffect(() => {
+    if (restoredRef.current) return;
+    if (!session?.user) return;
+
+    const currentId = getSpreadsheetId();
+    if (currentId) {
+      restoredRef.current = true;
+      return;
+    }
+
+    const lastId = getLastSpreadsheetId();
+    const lastName = getLastSpreadsheetName();
+    if (lastId) {
+      restoredRef.current = true;
+      restoreMutation.mutate(lastId);
+    } else {
+      restoredRef.current = true;
+    }
+  }, [session?.user]);
 
   return (
     <AuthContext.Provider

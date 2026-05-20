@@ -78,11 +78,6 @@ export function getTaskColumns(
       },
     },
     {
-      accessorKey: "assignee",
-      header: "Assigned To",
-      cell: ({ row }) => row.original.assignee?.name || "—",
-    },
-    {
       id: "actions",
       cell: ({ row }) => {
         const task = row.original;

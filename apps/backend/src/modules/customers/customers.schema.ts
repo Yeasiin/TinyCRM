@@ -9,7 +9,6 @@ export const createCustomerSchema = z.object({
   industry: z.string().optional(),
   notes: z.string().optional(),
   leadId: z.string().uuid().optional(),
-  assignedTo: z.string().optional(),
 });
 
 export const updateCustomerSchema = createCustomerSchema.partial();

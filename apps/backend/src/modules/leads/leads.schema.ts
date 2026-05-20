@@ -18,7 +18,6 @@ export const createLeadSchema = z.object({
   status: z.enum(leadStatusValues).optional(),
   source: z.string().max(100).optional(),
   estimatedValue: z.coerce.number().int().min(0).optional(),
-  assignedTo: z.string().optional(),
 });
 
 export const updateLeadSchema = createLeadSchema.partial();
@@ -28,7 +27,6 @@ export const listLeadsQuerySchema = z.object({
   search: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
-  assignedTo: z.string().optional(),
 });
 
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;

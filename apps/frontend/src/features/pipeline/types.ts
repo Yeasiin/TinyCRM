@@ -10,7 +10,6 @@ export type DealStage =
 export interface PipelineDeal {
   id: string;
   userId: string;
-  assignedTo: string | null;
   leadId: string | null;
   customerId: string | null;
   title: string;
@@ -30,11 +29,6 @@ export interface PipelineDeal {
     name: string;
     email: string | null;
     company: string | null;
-  } | null;
-  assignee?: {
-    id: string;
-    name: string;
-    email: string;
   } | null;
 }
 

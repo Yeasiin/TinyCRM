@@ -7,7 +7,6 @@ export const createDealSchema = z.object({
   title: z.string().min(1, "Title is required").max(200),
   stage: z.enum(leadStatusValues).default("new"),
   value: z.coerce.number().int().min(0).optional(),
-  assignedTo: z.string().optional(),
 });
 
 export const updateDealStageSchema = z.object({

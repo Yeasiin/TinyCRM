@@ -10,7 +10,6 @@ export type LeadStatus =
 export interface Lead {
   id: string;
   userId: string;
-  assignedTo: string | null;
   name: string;
   email: string | null;
   phone: string | null;
@@ -20,11 +19,6 @@ export interface Lead {
   estimatedValue: number | null;
   createdAt: string;
   updatedAt: string;
-  assignee?: {
-    id: string;
-    name: string;
-    email: string;
-  } | null;
 }
 
 export interface LeadFilters {
@@ -32,7 +26,6 @@ export interface LeadFilters {
   search?: string;
   page?: number;
   limit?: number;
-  assignedTo?: string;
 }
 
 export interface LeadsResponse {
@@ -53,7 +46,6 @@ export interface CreateLeadInput {
   status?: LeadStatus;
   source?: string;
   estimatedValue?: number;
-  assignedTo?: string;
 }
 
 export type UpdateLeadInput = Partial<CreateLeadInput>;

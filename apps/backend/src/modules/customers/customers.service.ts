@@ -1,16 +1,5 @@
-import { db } from "@/db";
-import { customers, leads, activities, deals } from "@/db/schema";
-import {
-  eq,
-  and,
-  isNull,
-  ilike,
-  or,
-  desc,
-  count,
-  SQL,
-} from "drizzle-orm";
 import { AppError } from "@/lib/error-handler";
+import * as store from "@/lib/sheets-store";
 import type { CreateCustomerInput, UpdateCustomerInput } from "./customers.schema";
 
 export interface ListCustomersFilters {
@@ -19,192 +8,182 @@ export interface ListCustomersFilters {
   limit?: number;
 }
 
-export async function listCustomers(userId: string, filters: ListCustomersFilters) {
+export async function listCustomers(
+  accessToken: string,
+  spreadsheetId: string,
+  userId: string,
+  filters: ListCustomersFilters,
+) {
   const { search, page = 1, limit = 20 } = filters;
-  const offset = (page - 1) * limit;
-
-  const conditions: SQL[] = [
-    eq(customers.userId, userId),
-    isNull(customers.deletedAt),
-  ];
-
-  if (search) {
-    const searchCondition = or(
-      ilike(customers.name, `%${search}%`),
-      ilike(customers.email, `%${search}%`),
-      ilike(customers.company, `%${search}%`),
-    );
-    if (searchCondition) conditions.push(searchCondition);
-  }
-
-  const where = and(...conditions);
-
-  const [data, totalResult] = await Promise.all([
-    db.query.customers.findMany({
-      where,
-      limit,
-      offset,
-      orderBy: desc(customers.createdAt),
-      with: { lead: true, assignee: true },
-    }),
-    db.select({ count: count() }).from(customers).where(where),
-  ]);
-
-  const total = totalResult[0]?.count ?? 0;
-
-  return {
-    data,
-    meta: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
+  const result = await store.list(accessToken, spreadsheetId, "Customers", {
+    userId,
+    search,
+  }, {
+    sortBy: "createdAt",
+    sortOrder: "desc",
+    page,
+    limit,
+  });
+  return result;
 }
 
-export async function getCustomer(userId: string, customerId: string) {
-  const customer = await db.query.customers.findFirst({
-    where: and(
-      eq(customers.id, customerId),
-      eq(customers.userId, userId),
-      isNull(customers.deletedAt),
-    ),
-    with: { lead: true, assignee: true },
-  });
-
-  if (!customer) throw new AppError("Customer not found", 404);
+export async function getCustomer(
+  accessToken: string,
+  spreadsheetId: string,
+  userId: string,
+  customerId: string,
+) {
+  const customer = await store.getById(accessToken, spreadsheetId, "Customers", customerId);
+  if (!customer || customer.userId !== userId) {
+    throw new AppError("Customer not found", 404);
+  }
   return customer;
 }
 
-export async function createCustomer(userId: string, input: CreateCustomerInput) {
-  const values: any = {
+export async function createCustomer(
+  accessToken: string,
+  spreadsheetId: string,
+  userId: string,
+  input: CreateCustomerInput,
+) {
+  const customer = await store.create(accessToken, spreadsheetId, "Customers", {
     userId,
     name: input.name,
-  };
+    email: input.email || null,
+    phone: input.phone || null,
+    company: input.company || null,
+    address: input.address || null,
+    industry: input.industry || null,
+    notes: input.notes || null,
+    leadId: input.leadId || null,
+  });
 
-  if (input.email) values.email = input.email;
-  if (input.phone) values.phone = input.phone;
-  if (input.company) values.company = input.company;
-  if (input.address) values.address = input.address;
-  if (input.industry) values.industry = input.industry;
-  if (input.notes) values.notes = input.notes;
-  if (input.leadId) values.leadId = input.leadId;
-  if (input.assignedTo) values.assignedTo = input.assignedTo;
-
-  const [customer] = await db.insert(customers).values(values).returning();
-
-  await db.insert(activities).values({
+  await store.create(accessToken, spreadsheetId, "Activities", {
     userId,
-    customerId: customer.id,
     leadId: customer.leadId,
+    customerId: customer.id,
+    dealId: null,
+    taskId: null,
     type: "customer_created",
     description: `Customer "${customer.name}" was created`,
+    metadata: null,
   });
 
   return customer;
 }
 
 export async function convertLeadToCustomer(
+  accessToken: string,
+  spreadsheetId: string,
   userId: string,
   leadId: string,
   extra?: { notes?: string; address?: string; industry?: string },
 ) {
-  const lead = await db.query.leads.findFirst({
-    where: and(eq(leads.id, leadId), eq(leads.userId, userId), isNull(leads.deletedAt)),
+  const lead = await store.getById(accessToken, spreadsheetId, "Leads", leadId);
+  if (!lead || lead.userId !== userId || lead.deletedAt) {
+    throw new AppError("Lead not found", 404);
+  }
+
+  const customer = await store.create(accessToken, spreadsheetId, "Customers", {
+    userId,
+    leadId,
+    name: lead.name,
+    email: lead.email || null,
+    phone: lead.phone || null,
+    company: lead.company || null,
+    notes: extra?.notes || null,
+    address: extra?.address || null,
+    industry: extra?.industry || null,
   });
 
-  if (!lead) throw new AppError("Lead not found", 404);
-
-  const [customer] = await db
-    .insert(customers)
-    .values({
-      userId,
-      leadId,
-      name: lead.name,
-      email: lead.email,
-      phone: lead.phone,
-      company: lead.company,
-      notes: extra?.notes,
-      address: extra?.address,
-      industry: extra?.industry,
-      assignedTo: lead.assignedTo,
-    })
-    .returning();
-
   // Update lead status to won
-  await db
-    .update(leads)
-    .set({ status: "won" as any })
-    .where(eq(leads.id, leadId));
+  await store.update(accessToken, spreadsheetId, "Leads", leadId, {
+    status: "won",
+  });
 
   // Create a deal for the converted lead
-  await db.insert(deals).values({
+  await store.create(accessToken, spreadsheetId, "Deals", {
     userId,
     leadId,
     customerId: customer.id,
     title: `${lead.name} - Deal`,
-    stage: "won" as any,
-    value: lead.estimatedValue,
-    assignedTo: lead.assignedTo,
+    stage: "won",
+    value: lead.estimatedValue || null,
+    closedAt: new Date().toISOString(),
   });
 
-  await db.insert(activities).values({
+  await store.create(accessToken, spreadsheetId, "Activities", {
     userId,
     leadId,
     customerId: customer.id,
+    dealId: null,
+    taskId: null,
     type: "lead_converted",
     description: `Lead "${lead.name}" was converted to customer`,
+    metadata: null,
   });
 
   return customer;
 }
 
 export async function updateCustomer(
+  accessToken: string,
+  spreadsheetId: string,
   userId: string,
   customerId: string,
   input: UpdateCustomerInput,
 ) {
-  await getCustomer(userId, customerId);
+  await getCustomer(accessToken, spreadsheetId, userId, customerId);
 
-  const values: any = {};
-  if (input.name !== undefined) values.name = input.name;
-  if (input.email !== undefined) values.email = input.email || null;
-  if (input.phone !== undefined) values.phone = input.phone;
-  if (input.company !== undefined) values.company = input.company;
-  if (input.address !== undefined) values.address = input.address;
-  if (input.industry !== undefined) values.industry = input.industry;
-  if (input.notes !== undefined) values.notes = input.notes;
-  if (input.assignedTo !== undefined) values.assignedTo = input.assignedTo || null;
+  const updates: Record<string, any> = {};
+  if (input.name !== undefined) updates.name = input.name;
+  if (input.email !== undefined) updates.email = input.email || null;
+  if (input.phone !== undefined) updates.phone = input.phone || null;
+  if (input.company !== undefined) updates.company = input.company || null;
+  if (input.address !== undefined) updates.address = input.address || null;
+  if (input.industry !== undefined) updates.industry = input.industry || null;
+  if (input.notes !== undefined) updates.notes = input.notes || null;
 
-  const [updated] = await db
-    .update(customers)
-    .set(values)
-    .where(and(eq(customers.id, customerId), eq(customers.userId, userId)))
-    .returning();
-
-  await db.insert(activities).values({
-    userId,
+  const updated = await store.update(
+    accessToken,
+    spreadsheetId,
+    "Customers",
     customerId,
+    updates,
+  );
+
+  await store.create(accessToken, spreadsheetId, "Activities", {
+    userId,
+    leadId: updated.leadId,
+    customerId,
+    dealId: null,
+    taskId: null,
     type: "customer_updated",
     description: `Customer "${updated.name}" was updated`,
+    metadata: null,
   });
 
   return updated;
 }
 
-export async function deleteCustomer(userId: string, customerId: string) {
-  await getCustomer(userId, customerId);
+export async function deleteCustomer(
+  accessToken: string,
+  spreadsheetId: string,
+  userId: string,
+  customerId: string,
+) {
+  await getCustomer(accessToken, spreadsheetId, userId, customerId);
 
-  await db
-    .update(customers)
-    .set({ deletedAt: new Date() })
-    .where(and(eq(customers.id, customerId), eq(customers.userId, userId)));
+  await store.softDelete(accessToken, spreadsheetId, "Customers", customerId);
 
-  await db.insert(activities).values({
+  await store.create(accessToken, spreadsheetId, "Activities", {
     userId,
+    leadId: null,
     customerId,
+    dealId: null,
+    taskId: null,
     type: "customer_updated",
     description: "Customer was deleted",
+    metadata: null,
   });
 }

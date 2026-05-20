@@ -4,12 +4,10 @@ import { useParams } from "next/navigation";
 import { useLead } from "@/features/leads/api/use-leads";
 import { NotesTimeline } from "@/features/notes/components/notes-timeline";
 import { ActivityTimeline } from "@/features/activities/components/activity-timeline";
-import { AttachmentList } from "@/features/attachments/components/attachment-list";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Mail, Phone, Building2, DollarSign, Calendar } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Building2, Calendar } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 
@@ -115,14 +113,6 @@ export default function LeadDetailPage() {
                   <span className="text-sm">{lead.company}</span>
                 </div>
               )}
-              {lead.assignee && (
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    Assigned to {lead.assignee.name}
-                  </span>
-                </div>
-              )}
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">
@@ -140,14 +130,6 @@ export default function LeadDetailPage() {
             </CardHeader>
             <CardContent>
               <NotesTimeline leadId={leadId} />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Attachments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AttachmentList leadId={leadId} />
             </CardContent>
           </Card>
         </div>

@@ -6,9 +6,36 @@ import { PipelineChart } from "@/features/dashboard/components/pipeline-chart";
 import { ActivityFeed } from "@/features/dashboard/components/activity-feed";
 import { RecentLeads } from "@/features/dashboard/components/recent-leads";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
-  const { data, isLoading } = useDashboardStats();
+  const router = useRouter();
+  const { data, isLoading, error } = useDashboardStats();
+
+  const isSpreadsheetError =
+    error &&
+    (error.message === "SPREADSHEET_NOT_SELECTED" ||
+      error.message?.includes("SPREADSHEET_NOT_SELECTED"));
+
+  if (isSpreadsheetError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6 text-center">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold tracking-tight">
+            No Spreadsheet Selected
+          </h1>
+          <p className="text-muted-foreground max-w-md">
+            You need to select a Google Spreadsheet to store your CRM data.
+            Choose an existing sheet from your Drive or create a new one.
+          </p>
+        </div>
+        <Button onClick={() => router.push("/select-sheet")}>
+          Select Spreadsheet
+        </Button>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -26,6 +53,18 @@ export default function DashboardPage() {
           <Skeleton className="h-96" />
           <Skeleton className="h-96" />
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center">
+        <h1 className="text-xl font-semibold">Something went wrong</h1>
+        <p className="text-muted-foreground">{error.message}</p>
+        <Button onClick={() => router.push("/select-sheet")}>
+          Select Spreadsheet
+        </Button>
       </div>
     );
   }

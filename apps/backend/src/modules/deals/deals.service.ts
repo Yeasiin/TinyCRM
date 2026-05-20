@@ -1,16 +1,5 @@
-import { db } from "@/db";
-import { deals, activities, leads } from "@/db/schema";
-import {
-  eq,
-  and,
-  isNull,
-  ilike,
-  or,
-  desc,
-  count,
-  SQL,
-} from "drizzle-orm";
 import { AppError } from "@/lib/error-handler";
+import * as store from "@/lib/sheets-store";
 import type { CreateDealInput, UpdateDealStageInput } from "./deals.schema";
 
 export interface ListDealsFilters {
@@ -20,52 +9,33 @@ export interface ListDealsFilters {
   limit?: number;
 }
 
-export async function listDeals(userId: string, filters: ListDealsFilters) {
+export async function listDeals(
+  accessToken: string,
+  spreadsheetId: string,
+  userId: string,
+  filters: ListDealsFilters,
+) {
   const { stage, search, page = 1, limit = 20 } = filters;
-  const offset = (page - 1) * limit;
-
-  const conditions: SQL[] = [eq(deals.userId, userId), isNull(deals.deletedAt)];
-
-  if (stage) conditions.push(eq(deals.stage, stage as any));
-  if (search) {
-    const searchCondition = or(
-      ilike(deals.title, `%${search}%`),
-      ilike(leads.name, `%${search}%`),
-    );
-    if (searchCondition) conditions.push(searchCondition);
-  }
-
-  const where = and(...conditions);
-
-  const [data, totalResult] = await Promise.all([
-    db.query.deals.findMany({
-      where,
-      limit,
-      offset,
-      orderBy: desc(deals.createdAt),
-      with: { lead: true, customer: true, assignee: true },
-    }),
-    db.select({ count: count() }).from(deals).where(where),
-  ]);
-
-  const total = totalResult[0]?.count ?? 0;
-
-  return {
-    data,
-    meta: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
+  const result = await store.list(accessToken, spreadsheetId, "Deals", {
+    userId,
+    stage,
+    search,
+  }, {
+    sortBy: "createdAt",
+    sortOrder: "desc",
+    page,
+    limit,
+  });
+  return result;
 }
 
-export async function getPipeline(userId: string) {
-  const dealList = await db.query.deals.findMany({
-    where: and(eq(deals.userId, userId), isNull(deals.deletedAt)),
-    orderBy: desc(deals.updatedAt),
-    with: { lead: true, customer: true, assignee: true },
+export async function getPipeline(
+  accessToken: string,
+  spreadsheetId: string,
+  userId: string,
+) {
+  const { data: dealList } = await store.list(accessToken, spreadsheetId, "Deals", {
+    userId,
   });
 
   const stages = [
@@ -81,103 +51,118 @@ export async function getPipeline(userId: string) {
   const columns = stages.map((stage) => ({
     id: stage,
     title: stage.charAt(0).toUpperCase() + stage.slice(1),
-    deals: dealList.filter((d) => d.stage === stage),
+    deals: dealList.filter((d: any) => d.stage === stage),
   }));
 
   return { columns };
 }
 
-export async function getDeal(userId: string, dealId: string) {
-  const deal = await db.query.deals.findFirst({
-    where: and(
-      eq(deals.id, dealId),
-      eq(deals.userId, userId),
-      isNull(deals.deletedAt),
-    ),
-    with: { lead: true, customer: true, assignee: true },
-  });
-
-  if (!deal) throw new AppError("Deal not found", 404);
+export async function getDeal(
+  accessToken: string,
+  spreadsheetId: string,
+  userId: string,
+  dealId: string,
+) {
+  const deal = await store.getById(accessToken, spreadsheetId, "Deals", dealId);
+  if (!deal || deal.userId !== userId) {
+    throw new AppError("Deal not found", 404);
+  }
   return deal;
 }
 
-export async function createDeal(userId: string, input: CreateDealInput) {
-  const values: any = {
+export async function createDeal(
+  accessToken: string,
+  spreadsheetId: string,
+  userId: string,
+  input: CreateDealInput,
+) {
+  const deal = await store.create(accessToken, spreadsheetId, "Deals", {
     userId,
     title: input.title,
     stage: input.stage ?? "new",
-  };
+    leadId: input.leadId || null,
+    customerId: input.customerId || null,
+    value: input.value ?? null,
+    closedAt: null,
+  });
 
-  if (input.leadId) values.leadId = input.leadId;
-  if (input.customerId) values.customerId = input.customerId;
-  if (input.value !== undefined) values.value = input.value;
-  if (input.assignedTo) values.assignedTo = input.assignedTo;
-
-  const [deal] = await db.insert(deals).values(values).returning();
-
-  await db.insert(activities).values({
+  await store.create(accessToken, spreadsheetId, "Activities", {
     userId,
-    dealId: deal.id,
     leadId: deal.leadId,
     customerId: deal.customerId,
+    dealId: deal.id,
+    taskId: null,
     type: "deal_created",
     description: `Deal "${deal.title}" was created`,
+    metadata: null,
   });
 
   return deal;
 }
 
 export async function updateDealStage(
+  accessToken: string,
+  spreadsheetId: string,
   userId: string,
   dealId: string,
   input: UpdateDealStageInput,
 ) {
-  const existing = await getDeal(userId, dealId);
+  const existing = await getDeal(accessToken, spreadsheetId, userId, dealId);
 
-  const [updated] = await db
-    .update(deals)
-    .set({
-      stage: input.stage,
-      closedAt: ["won", "lost"].includes(input.stage) ? new Date() : existing.closedAt,
-    })
-    .where(and(eq(deals.id, dealId), eq(deals.userId, userId)))
-    .returning();
+  const updates: Record<string, any> = {
+    stage: input.stage,
+  };
+  if (["won", "lost"].includes(input.stage)) {
+    updates.closedAt = new Date().toISOString();
+  }
 
-  await db.insert(activities).values({
-    userId,
+  const updated = await store.update(
+    accessToken,
+    spreadsheetId,
+    "Deals",
     dealId,
+    updates,
+  );
+
+  await store.create(accessToken, spreadsheetId, "Activities", {
+    userId,
     leadId: existing.leadId,
     customerId: existing.customerId,
+    dealId,
+    taskId: null,
     type: "deal_updated",
     description: `Deal moved to ${input.stage}`,
-    metadata: { from: existing.stage, to: input.stage },
+    metadata: JSON.stringify({ from: existing.stage, to: input.stage }),
   });
 
   // Also update the linked lead status if exists
   if (existing.leadId) {
-    await db
-      .update(leads)
-      .set({ status: input.stage as any })
-      .where(eq(leads.id, existing.leadId));
+    await store.update(accessToken, spreadsheetId, "Leads", existing.leadId, {
+      status: input.stage,
+    });
   }
 
   return updated;
 }
 
-export async function deleteDeal(userId: string, dealId: string) {
-  const existing = await getDeal(userId, dealId);
+export async function deleteDeal(
+  accessToken: string,
+  spreadsheetId: string,
+  userId: string,
+  dealId: string,
+) {
+  const existing = await getDeal(accessToken, spreadsheetId, userId, dealId);
 
-  await db
-    .update(deals)
-    .set({ deletedAt: new Date() })
-    .where(and(eq(deals.id, dealId), eq(deals.userId, userId)));
+  await store.softDelete(accessToken, spreadsheetId, "Deals", dealId);
 
-  await db.insert(activities).values({
+  await store.create(accessToken, spreadsheetId, "Activities", {
     userId,
-    dealId,
     leadId: existing.leadId,
     customerId: existing.customerId,
+    dealId,
+    taskId: null,
     type: "deal_updated",
     description: "Deal was deleted",
+    metadata: null,
   });
 }

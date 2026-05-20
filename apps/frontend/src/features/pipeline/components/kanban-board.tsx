@@ -101,36 +101,42 @@ export function KanbanBoard() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveDeal(null);
-    setActiveColumn(null);
 
-    if (!over) return;
+    if (!over) {
+      setActiveColumn(null);
+      return;
+    }
 
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    const activeCol = findColumn(activeId);
+    // Use activeColumn state (set at drag start) instead of findColumn,
+    // because handleDragOver may have already moved the card optimistically
+    const originalColumnId = activeColumn;
     const overCol = boardColumns.find(
       (col) => col.id === overId || col.deals.some((d) => d.id === overId),
     );
 
-    if (!activeCol || !overCol) return;
+    setActiveColumn(null);
 
-    if (activeCol.id !== overCol.id) {
-      // Update the deal stage on the server
+    if (!originalColumnId || !overCol) return;
+
+    if (originalColumnId !== overCol.id) {
+      // Cross-column move: update deal stage on server
       updateDealStage.mutate({
         id: activeId,
         data: { stage: overCol.id },
       });
     } else {
       // Reorder within the same column
-      const colDeals = activeCol.deals;
+      const colDeals = overCol.deals;
       const oldIndex = colDeals.findIndex((d) => d.id === activeId);
       const newIndex = colDeals.findIndex((d) => d.id === overId);
 
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
         setColumns((prev) =>
           prev.map((col) => {
-            if (col.id !== activeCol.id) return col;
+            if (col.id !== overCol.id) return col;
             return {
               ...col,
               deals: arrayMove(col.deals, oldIndex, newIndex),

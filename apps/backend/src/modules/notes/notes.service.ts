@@ -1,7 +1,5 @@
-import { db } from "@/db";
-import { notes, activities } from "@/db/schema";
-import { eq, and, isNull, desc, count, SQL } from "drizzle-orm";
 import { AppError } from "@/lib/error-handler";
+import * as store from "@/lib/sheets-store";
 import type { CreateNoteInput } from "./notes.schema";
 
 export interface ListNotesFilters {
@@ -11,72 +9,62 @@ export interface ListNotesFilters {
   limit?: number;
 }
 
-export async function listNotes(userId: string, filters: ListNotesFilters) {
+export async function listNotes(
+  accessToken: string,
+  spreadsheetId: string,
+  userId: string,
+  filters: ListNotesFilters,
+) {
   const { leadId, customerId, page = 1, limit = 20 } = filters;
-  const offset = (page - 1) * limit;
-
-  const conditions: SQL[] = [eq(notes.userId, userId), isNull(notes.deletedAt)];
-
-  if (leadId) conditions.push(eq(notes.leadId, leadId));
-  if (customerId) conditions.push(eq(notes.customerId, customerId));
-
-  const where = and(...conditions);
-
-  const [data, totalResult] = await Promise.all([
-    db.query.notes.findMany({
-      where,
-      limit,
-      offset,
-      orderBy: desc(notes.createdAt),
-      with: { author: true },
-    }),
-    db.select({ count: count() }).from(notes).where(where),
-  ]);
-
-  const total = totalResult[0]?.count ?? 0;
-
-  return {
-    data,
-    meta: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
+  const result = await store.list(accessToken, spreadsheetId, "Notes", {
+    userId,
+    leadId,
+    customerId,
+  }, {
+    sortBy: "createdAt",
+    sortOrder: "desc",
+    page,
+    limit,
+  });
+  return result;
 }
 
-export async function createNote(userId: string, input: CreateNoteInput) {
-  const values: any = {
+export async function createNote(
+  accessToken: string,
+  spreadsheetId: string,
+  userId: string,
+  input: CreateNoteInput,
+) {
+  const note = await store.create(accessToken, spreadsheetId, "Notes", {
     userId,
     content: input.content,
-  };
+    leadId: input.leadId || null,
+    customerId: input.customerId || null,
+  });
 
-  if (input.leadId) values.leadId = input.leadId;
-  if (input.customerId) values.customerId = input.customerId;
-
-  const [note] = await db.insert(notes).values(values).returning();
-
-  await db.insert(activities).values({
+  await store.create(accessToken, spreadsheetId, "Activities", {
     userId,
     leadId: note.leadId,
     customerId: note.customerId,
+    dealId: null,
+    taskId: null,
     type: "note",
-    description: `Note added`,
+    description: "Note added",
+    metadata: null,
   });
 
   return note;
 }
 
-export async function deleteNote(userId: string, noteId: string) {
-  const note = await db.query.notes.findFirst({
-    where: and(eq(notes.id, noteId), eq(notes.userId, userId), isNull(notes.deletedAt)),
-  });
-
-  if (!note) throw new AppError("Note not found", 404);
-
-  await db
-    .update(notes)
-    .set({ deletedAt: new Date() })
-    .where(and(eq(notes.id, noteId), eq(notes.userId, userId)));
+export async function deleteNote(
+  accessToken: string,
+  spreadsheetId: string,
+  userId: string,
+  noteId: string,
+) {
+  const note = await store.getById(accessToken, spreadsheetId, "Notes", noteId);
+  if (!note || note.userId !== userId) {
+    throw new AppError("Note not found", 404);
+  }
+  await store.softDelete(accessToken, spreadsheetId, "Notes", noteId);
 }

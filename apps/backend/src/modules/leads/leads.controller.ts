@@ -3,6 +3,8 @@ import * as leadsService from "./leads.service";
 
 export async function list(req: Request, res: Response) {
   const userId = req.user!.id;
+  const accessToken = req.googleAccessToken!;
+  const spreadsheetId = req.spreadsheetId!;
   const filters = {
     status: req.query.status as string | undefined,
     search: req.query.search as string | undefined,
@@ -10,33 +12,66 @@ export async function list(req: Request, res: Response) {
     limit: req.query.limit
       ? parseInt(req.query.limit as string, 10)
       : undefined,
-    assignedTo: req.query.assignedTo as string | undefined,
   };
 
-  const result = await leadsService.listLeads(userId, filters);
+  const result = await leadsService.listLeads(
+    accessToken,
+    spreadsheetId,
+    userId,
+    filters,
+  );
   res.json(result);
 }
 
 export async function getById(req: Request, res: Response) {
   const userId = req.user!.id;
-  const lead = await leadsService.getLead(userId, req.params.id);
+  const accessToken = req.googleAccessToken!;
+  const spreadsheetId = req.spreadsheetId!;
+  const lead = await leadsService.getLead(
+    accessToken,
+    spreadsheetId,
+    userId,
+    req.params.id,
+  );
   res.json(lead);
 }
 
 export async function create(req: Request, res: Response) {
   const userId = req.user!.id;
-  const lead = await leadsService.createLead(userId, req.body);
+  const accessToken = req.googleAccessToken!;
+  const spreadsheetId = req.spreadsheetId!;
+  const lead = await leadsService.createLead(
+    accessToken,
+    spreadsheetId,
+    userId,
+    req.body,
+  );
   res.status(201).json(lead);
 }
 
 export async function update(req: Request, res: Response) {
   const userId = req.user!.id;
-  const lead = await leadsService.updateLead(userId, req.params.id, req.body);
+  const accessToken = req.googleAccessToken!;
+  const spreadsheetId = req.spreadsheetId!;
+  const lead = await leadsService.updateLead(
+    accessToken,
+    spreadsheetId,
+    userId,
+    req.params.id,
+    req.body,
+  );
   res.json(lead);
 }
 
 export async function remove(req: Request, res: Response) {
   const userId = req.user!.id;
-  await leadsService.deleteLead(userId, req.params.id);
+  const accessToken = req.googleAccessToken!;
+  const spreadsheetId = req.spreadsheetId!;
+  await leadsService.deleteLead(
+    accessToken,
+    spreadsheetId,
+    userId,
+    req.params.id,
+  );
   res.status(204).send();
 }

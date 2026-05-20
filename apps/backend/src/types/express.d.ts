@@ -11,6 +11,8 @@ declare global {
         updatedAt: Date;
       };
       session?: any;
+      googleAccessToken?: string;
+      spreadsheetId?: string;
     }
   }
 }

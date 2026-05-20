@@ -1,7 +1,6 @@
 export interface Customer {
   id: string;
   userId: string;
-  assignedTo: string | null;
   leadId: string | null;
   name: string;
   email: string | null;
@@ -16,11 +15,6 @@ export interface Customer {
     id: string;
     name: string;
     status: string;
-  } | null;
-  assignee?: {
-    id: string;
-    name: string;
-    email: string;
   } | null;
 }
 
@@ -49,7 +43,6 @@ export interface CreateCustomerInput {
   industry?: string;
   notes?: string;
   leadId?: string;
-  assignedTo?: string;
 }
 
 export type UpdateCustomerInput = Partial<CreateCustomerInput>;

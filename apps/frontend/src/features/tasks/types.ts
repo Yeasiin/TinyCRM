@@ -3,7 +3,6 @@ export type TaskStatus = "todo" | "in_progress" | "done";
 export interface Task {
   id: string;
   userId: string;
-  assignedTo: string | null;
   leadId: string | null;
   customerId: string | null;
   title: string;
@@ -20,18 +19,12 @@ export interface Task {
     id: string;
     name: string;
   } | null;
-  assignee?: {
-    id: string;
-    name: string;
-    email: string;
-  } | null;
 }
 
 export interface TaskFilters {
   status?: TaskStatus;
   leadId?: string;
   customerId?: string;
-  assignedTo?: string;
   page?: number;
   limit?: number;
 }
@@ -53,7 +46,6 @@ export interface CreateTaskInput {
   status?: TaskStatus;
   leadId?: string;
   customerId?: string;
-  assignedTo?: string;
 }
 
 export type UpdateTaskInput = Partial<CreateTaskInput>;

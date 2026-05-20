@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { QueryProvider } from "@/providers/query-provider";
 import { AuthProvider } from "@/providers/auth-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -39,7 +40,9 @@ export default function RootLayout({
       <body className="antialiased">
         <QueryProvider>
           <AuthProvider>
-            {children}
+            <Suspense fallback={null}>
+              {children}
+            </Suspense>
             <Toaster position="top-center" richColors />
           </AuthProvider>
         </QueryProvider>

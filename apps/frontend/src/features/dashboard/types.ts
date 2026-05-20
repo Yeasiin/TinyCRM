@@ -56,8 +56,4 @@ export interface LeadItem {
   company: string | null;
   status: string;
   createdAt: string;
-  assignee?: {
-    id: string;
-    name: string;
-  } | null;
 }

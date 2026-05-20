@@ -49,12 +49,6 @@ export function RecentLeads({ leads }: RecentLeadsProps) {
                   <p className="text-sm font-medium">{lead.name}</p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     {lead.company && <span>{lead.company}</span>}
-                    {lead.assignee && (
-                      <>
-                        <span>·</span>
-                        <span>{lead.assignee.name}</span>
-                      </>
-                    )}
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1">

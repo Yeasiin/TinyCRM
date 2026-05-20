@@ -72,11 +72,7 @@ export function KanbanCard({ deal, isOverlay }: KanbanCardProps) {
           ) : (
             <div />
           )}
-          {deal.assignee && (
-            <Badge variant="outline" className="text-[10px] h-5">
-              {deal.assignee.name}
-            </Badge>
-          )}
+
         </div>
       </CardContent>
     </Card>
