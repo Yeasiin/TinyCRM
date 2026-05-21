@@ -3,7 +3,6 @@ import * as store from "@/lib/sheets-store";
 export async function getDashboardStats(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
 ) {
   // Load all data in parallel
   const [
@@ -61,7 +60,6 @@ export async function getDashboardStats(
   // Recent activity (top 10)
   const recentActivity = activityList.slice(0, 10).map((a: any) => ({
     id: a.id,
-    userId: a.userId,
     leadId: a.leadId ?? null,
     customerId: a.customerId ?? null,
     dealId: a.dealId ?? null,

@@ -10,7 +10,6 @@ export interface ListActivitiesFilters {
 export async function listActivities(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   filters: ListActivitiesFilters,
 ) {
   const { leadId, customerId, page = 1, limit = 20 } = filters;

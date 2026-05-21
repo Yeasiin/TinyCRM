@@ -11,7 +11,6 @@ export interface ListCustomersFilters {
 export async function listCustomers(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   filters: ListCustomersFilters,
 ) {
   const { search, page = 1, limit = 20 } = filters;
@@ -29,15 +28,11 @@ export async function listCustomers(
 export async function getCustomer(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   customerId: string,
 ) {
   const customer = await store.getById(accessToken, spreadsheetId, "Customers", customerId);
   if (!customer) {
     throw new AppError("Customer not found", 404);
-  }
-  if (customer.userId && customer.userId !== userId) {
-    console.warn(`[getCustomer] userId mismatch for customer ${customerId}: expected ${userId}, got ${customer.userId}. Allowing access.`);
   }
   return customer;
 }
@@ -45,11 +40,9 @@ export async function getCustomer(
 export async function createCustomer(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   input: CreateCustomerInput,
 ) {
   const customer = await store.create(accessToken, spreadsheetId, "Customers", {
-    userId,
     name: input.name,
     email: input.email || null,
     phone: input.phone || null,
@@ -61,7 +54,6 @@ export async function createCustomer(
   });
 
   await store.create(accessToken, spreadsheetId, "Activities", {
-    userId,
     leadId: customer.leadId,
     customerId: customer.id,
     dealId: null,
@@ -77,7 +69,6 @@ export async function createCustomer(
 export async function convertLeadToCustomer(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   leadId: string,
   extra?: { notes?: string; address?: string; industry?: string },
 ) {
@@ -85,12 +76,8 @@ export async function convertLeadToCustomer(
   if (!lead || lead.deletedAt) {
     throw new AppError("Lead not found", 404);
   }
-  if (lead.userId && lead.userId !== userId) {
-    console.warn(`[convertLeadToCustomer] userId mismatch for lead ${leadId}: expected ${userId}, got ${lead.userId}. Allowing access.`);
-  }
 
   const customer = await store.create(accessToken, spreadsheetId, "Customers", {
-    userId,
     leadId,
     name: lead.name,
     email: lead.email || null,
@@ -108,7 +95,6 @@ export async function convertLeadToCustomer(
 
   // Create a deal for the converted lead
   await store.create(accessToken, spreadsheetId, "Deals", {
-    userId,
     leadId,
     customerId: customer.id,
     title: `${lead.name} - Deal`,
@@ -118,7 +104,6 @@ export async function convertLeadToCustomer(
   });
 
   await store.create(accessToken, spreadsheetId, "Activities", {
-    userId,
     leadId,
     customerId: customer.id,
     dealId: null,
@@ -134,11 +119,10 @@ export async function convertLeadToCustomer(
 export async function updateCustomer(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   customerId: string,
   input: UpdateCustomerInput,
 ) {
-  await getCustomer(accessToken, spreadsheetId, userId, customerId);
+  await getCustomer(accessToken, spreadsheetId, customerId);
 
   const updates: Record<string, any> = {};
   if (input.name !== undefined) updates.name = input.name;
@@ -158,7 +142,6 @@ export async function updateCustomer(
   );
 
   await store.create(accessToken, spreadsheetId, "Activities", {
-    userId,
     leadId: updated.leadId,
     customerId,
     dealId: null,
@@ -174,15 +157,13 @@ export async function updateCustomer(
 export async function deleteCustomer(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   customerId: string,
 ) {
-  await getCustomer(accessToken, spreadsheetId, userId, customerId);
+  await getCustomer(accessToken, spreadsheetId, customerId);
 
   await store.softDelete(accessToken, spreadsheetId, "Customers", customerId);
 
   await store.create(accessToken, spreadsheetId, "Activities", {
-    userId,
     leadId: null,
     customerId,
     dealId: null,

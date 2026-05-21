@@ -71,10 +71,6 @@ export function filterRows(
         if (!searchable.includes(search)) return false;
         continue;
       }
-      // Backward compatibility: old data may have empty userId
-      if (key === "userId" && (row[key] === null || row[key] === undefined || row[key] === "")) {
-        continue;
-      }
       if (row[key] !== value) return false;
     }
     return true;

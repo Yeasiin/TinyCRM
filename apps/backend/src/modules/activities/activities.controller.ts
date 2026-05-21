@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import * as activitiesService from "./activities.service";
 
 export async function list(req: Request, res: Response) {
-  const userId = req.user!.id;
   const accessToken = req.googleAccessToken!;
   const spreadsheetId = req.spreadsheetId!;
   const filters = {
@@ -17,7 +16,6 @@ export async function list(req: Request, res: Response) {
   const result = await activitiesService.listActivities(
     accessToken,
     spreadsheetId,
-    userId,
     filters,
   );
   res.json(result);

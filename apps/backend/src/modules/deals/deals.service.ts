@@ -12,7 +12,6 @@ export interface ListDealsFilters {
 export async function listDeals(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   filters: ListDealsFilters,
 ) {
   const { stage, search, page = 1, limit = 20 } = filters;
@@ -31,7 +30,6 @@ export async function listDeals(
 export async function getPipeline(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
 ) {
   const { data: dealList } = await store.list(accessToken, spreadsheetId, "Deals", {});
 
@@ -57,15 +55,11 @@ export async function getPipeline(
 export async function getDeal(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   dealId: string,
 ) {
   const deal = await store.getById(accessToken, spreadsheetId, "Deals", dealId);
   if (!deal) {
     throw new AppError("Deal not found", 404);
-  }
-  if (deal.userId && deal.userId !== userId) {
-    console.warn(`[getDeal] userId mismatch for deal ${dealId}: expected ${userId}, got ${deal.userId}. Allowing access.`);
   }
   return deal;
 }
@@ -73,11 +67,9 @@ export async function getDeal(
 export async function createDeal(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   input: CreateDealInput,
 ) {
   const deal = await store.create(accessToken, spreadsheetId, "Deals", {
-    userId,
     title: input.title,
     stage: input.stage ?? "new",
     leadId: input.leadId || null,
@@ -87,7 +79,6 @@ export async function createDeal(
   });
 
   await store.create(accessToken, spreadsheetId, "Activities", {
-    userId,
     leadId: deal.leadId,
     customerId: deal.customerId,
     dealId: deal.id,
@@ -103,11 +94,10 @@ export async function createDeal(
 export async function updateDealStage(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   dealId: string,
   input: UpdateDealStageInput,
 ) {
-  const existing = await getDeal(accessToken, spreadsheetId, userId, dealId);
+  const existing = await getDeal(accessToken, spreadsheetId, dealId);
 
   const updates: Record<string, any> = {
     stage: input.stage,
@@ -125,7 +115,6 @@ export async function updateDealStage(
   );
 
   await store.create(accessToken, spreadsheetId, "Activities", {
-    userId,
     leadId: existing.leadId,
     customerId: existing.customerId,
     dealId,
@@ -148,15 +137,13 @@ export async function updateDealStage(
 export async function deleteDeal(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   dealId: string,
 ) {
-  const existing = await getDeal(accessToken, spreadsheetId, userId, dealId);
+  const existing = await getDeal(accessToken, spreadsheetId, dealId);
 
   await store.softDelete(accessToken, spreadsheetId, "Deals", dealId);
 
   await store.create(accessToken, spreadsheetId, "Activities", {
-    userId,
     leadId: existing.leadId,
     customerId: existing.customerId,
     dealId,

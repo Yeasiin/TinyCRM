@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import * as notesService from "./notes.service";
 
 export async function list(req: Request, res: Response) {
-  const userId = req.user!.id;
   const accessToken = req.googleAccessToken!;
   const spreadsheetId = req.spreadsheetId!;
   const filters = {
@@ -17,33 +16,28 @@ export async function list(req: Request, res: Response) {
   const result = await notesService.listNotes(
     accessToken,
     spreadsheetId,
-    userId,
     filters,
   );
   res.json(result);
 }
 
 export async function create(req: Request, res: Response) {
-  const userId = req.user!.id;
   const accessToken = req.googleAccessToken!;
   const spreadsheetId = req.spreadsheetId!;
   const note = await notesService.createNote(
     accessToken,
     spreadsheetId,
-    userId,
     req.body,
   );
   res.status(201).json(note);
 }
 
 export async function remove(req: Request, res: Response) {
-  const userId = req.user!.id;
   const accessToken = req.googleAccessToken!;
   const spreadsheetId = req.spreadsheetId!;
   await notesService.deleteNote(
     accessToken,
     spreadsheetId,
-    userId,
     req.params.id,
   );
   res.status(204).send();

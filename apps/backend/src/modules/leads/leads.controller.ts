@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import * as leadsService from "./leads.service";
 
 export async function list(req: Request, res: Response) {
-  const userId = req.user!.id;
   const accessToken = req.googleAccessToken!;
   const spreadsheetId = req.spreadsheetId!;
   const filters = {
@@ -17,46 +16,39 @@ export async function list(req: Request, res: Response) {
   const result = await leadsService.listLeads(
     accessToken,
     spreadsheetId,
-    userId,
     filters,
   );
   res.json(result);
 }
 
 export async function getById(req: Request, res: Response) {
-  const userId = req.user!.id;
   const accessToken = req.googleAccessToken!;
   const spreadsheetId = req.spreadsheetId!;
   const lead = await leadsService.getLead(
     accessToken,
     spreadsheetId,
-    userId,
     req.params.id,
   );
   res.json(lead);
 }
 
 export async function create(req: Request, res: Response) {
-  const userId = req.user!.id;
   const accessToken = req.googleAccessToken!;
   const spreadsheetId = req.spreadsheetId!;
   const lead = await leadsService.createLead(
     accessToken,
     spreadsheetId,
-    userId,
     req.body,
   );
   res.status(201).json(lead);
 }
 
 export async function update(req: Request, res: Response) {
-  const userId = req.user!.id;
   const accessToken = req.googleAccessToken!;
   const spreadsheetId = req.spreadsheetId!;
   const lead = await leadsService.updateLead(
     accessToken,
     spreadsheetId,
-    userId,
     req.params.id,
     req.body,
   );
@@ -64,13 +56,11 @@ export async function update(req: Request, res: Response) {
 }
 
 export async function remove(req: Request, res: Response) {
-  const userId = req.user!.id;
   const accessToken = req.googleAccessToken!;
   const spreadsheetId = req.spreadsheetId!;
   await leadsService.deleteLead(
     accessToken,
     spreadsheetId,
-    userId,
     req.params.id,
   );
   res.status(204).send();

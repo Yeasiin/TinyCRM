@@ -18,7 +18,6 @@ export type SheetName = (typeof SHEET_NAMES)[number];
 export const HEADERS: Record<SheetName, string[]> = {
   Leads: [
     "id",
-    "userId",
     "name",
     "email",
     "phone",
@@ -32,7 +31,6 @@ export const HEADERS: Record<SheetName, string[]> = {
   ],
   Customers: [
     "id",
-    "userId",
     "leadId",
     "name",
     "email",
@@ -47,7 +45,6 @@ export const HEADERS: Record<SheetName, string[]> = {
   ],
   Deals: [
     "id",
-    "userId",
     "leadId",
     "customerId",
     "title",
@@ -60,7 +57,6 @@ export const HEADERS: Record<SheetName, string[]> = {
   ],
   Tasks: [
     "id",
-    "userId",
     "leadId",
     "customerId",
     "title",
@@ -73,7 +69,6 @@ export const HEADERS: Record<SheetName, string[]> = {
   ],
   Notes: [
     "id",
-    "userId",
     "leadId",
     "customerId",
     "content",
@@ -83,7 +78,6 @@ export const HEADERS: Record<SheetName, string[]> = {
   ],
   Activities: [
     "id",
-    "userId",
     "leadId",
     "customerId",
     "dealId",

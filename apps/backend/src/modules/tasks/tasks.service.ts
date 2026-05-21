@@ -13,7 +13,6 @@ export interface ListTasksFilters {
 export async function listTasks(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   filters: ListTasksFilters,
 ) {
   const { status, leadId, customerId, page = 1, limit = 20 } = filters;
@@ -33,15 +32,11 @@ export async function listTasks(
 export async function getTask(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   taskId: string,
 ) {
   const task = await store.getById(accessToken, spreadsheetId, "Tasks", taskId);
   if (!task) {
     throw new AppError("Task not found", 404);
-  }
-  if (task.userId && task.userId !== userId) {
-    console.warn(`[getTask] userId mismatch for task ${taskId}: expected ${userId}, got ${task.userId}. Allowing access.`);
   }
   return task;
 }
@@ -49,11 +44,9 @@ export async function getTask(
 export async function createTask(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   input: CreateTaskInput,
 ) {
   const task = await store.create(accessToken, spreadsheetId, "Tasks", {
-    userId,
     title: input.title,
     status: input.status ?? "todo",
     description: input.description || null,
@@ -63,7 +56,6 @@ export async function createTask(
   });
 
   await store.create(accessToken, spreadsheetId, "Activities", {
-    userId,
     leadId: task.leadId,
     customerId: task.customerId,
     dealId: null,
@@ -79,11 +71,10 @@ export async function createTask(
 export async function updateTask(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   taskId: string,
   input: UpdateTaskInput,
 ) {
-  const existing = await getTask(accessToken, spreadsheetId, userId, taskId);
+  const existing = await getTask(accessToken, spreadsheetId, taskId);
 
   const updates: Record<string, any> = {};
   if (input.title !== undefined) updates.title = input.title;
@@ -103,7 +94,6 @@ export async function updateTask(
 
   if (input.status && input.status !== existing.status && input.status === "done") {
     await store.create(accessToken, spreadsheetId, "Activities", {
-      userId,
       leadId: updated.leadId,
       customerId: updated.customerId,
       dealId: null,
@@ -120,9 +110,8 @@ export async function updateTask(
 export async function deleteTask(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   taskId: string,
 ) {
-  await getTask(accessToken, spreadsheetId, userId, taskId);
+  await getTask(accessToken, spreadsheetId, taskId);
   await store.softDelete(accessToken, spreadsheetId, "Tasks", taskId);
 }

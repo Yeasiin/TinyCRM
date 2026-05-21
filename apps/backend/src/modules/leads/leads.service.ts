@@ -12,7 +12,6 @@ export interface ListLeadsFilters {
 export async function listLeads(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   filters: ListLeadsFilters,
 ) {
   const { status, search, page = 1, limit = 20 } = filters;
@@ -31,15 +30,11 @@ export async function listLeads(
 export async function getLead(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   leadId: string,
 ) {
   const lead = await store.getById(accessToken, spreadsheetId, "Leads", leadId);
   if (!lead) {
     throw new AppError("Lead not found", 404);
-  }
-  if (lead.userId && lead.userId !== userId) {
-    console.warn(`[getLead] userId mismatch for lead ${leadId}: expected ${userId}, got ${lead.userId}. Allowing access.`);
   }
   return lead;
 }
@@ -47,11 +42,9 @@ export async function getLead(
 export async function createLead(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   input: CreateLeadInput,
 ) {
   const lead = await store.create(accessToken, spreadsheetId, "Leads", {
-    userId,
     name: input.name,
     status: input.status ?? "new",
     email: input.email || null,
@@ -63,7 +56,6 @@ export async function createLead(
 
   // Auto-create a deal for this lead
   await store.create(accessToken, spreadsheetId, "Deals", {
-    userId,
     leadId: lead.id,
     title: `${lead.name} - Deal`,
     stage: lead.status ?? "new",
@@ -74,7 +66,6 @@ export async function createLead(
 
   // Log activity
   await store.create(accessToken, spreadsheetId, "Activities", {
-    userId,
     leadId: lead.id,
     customerId: null,
     dealId: null,
@@ -90,11 +81,10 @@ export async function createLead(
 export async function updateLead(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   leadId: string,
   input: UpdateLeadInput,
 ) {
-  const existing = await getLead(accessToken, spreadsheetId, userId, leadId);
+  const existing = await getLead(accessToken, spreadsheetId, leadId);
 
   const updates: Record<string, any> = {};
   if (input.name !== undefined) updates.name = input.name;
@@ -130,7 +120,6 @@ export async function updateLead(
       }
 
       await store.create(accessToken, spreadsheetId, "Activities", {
-        userId,
         leadId,
         customerId: null,
         dealId: linkedDeal.id,
@@ -155,7 +144,6 @@ export async function updateLead(
   }
 
   await store.create(accessToken, spreadsheetId, "Activities", {
-    userId,
     leadId,
     customerId: null,
     dealId: null,
@@ -171,10 +159,9 @@ export async function updateLead(
 export async function deleteLead(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   leadId: string,
 ) {
-  await getLead(accessToken, spreadsheetId, userId, leadId);
+  await getLead(accessToken, spreadsheetId, leadId);
 
   await store.softDelete(accessToken, spreadsheetId, "Leads", leadId);
 
@@ -190,7 +177,6 @@ export async function deleteLead(
   }
 
   await store.create(accessToken, spreadsheetId, "Activities", {
-    userId,
     leadId,
     customerId: null,
     dealId: null,

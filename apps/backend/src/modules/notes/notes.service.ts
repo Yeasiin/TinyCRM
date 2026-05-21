@@ -12,7 +12,6 @@ export interface ListNotesFilters {
 export async function listNotes(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   filters: ListNotesFilters,
 ) {
   const { leadId, customerId, page = 1, limit = 20 } = filters;
@@ -31,18 +30,15 @@ export async function listNotes(
 export async function createNote(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   input: CreateNoteInput,
 ) {
   const note = await store.create(accessToken, spreadsheetId, "Notes", {
-    userId,
     content: input.content,
     leadId: input.leadId || null,
     customerId: input.customerId || null,
   });
 
   await store.create(accessToken, spreadsheetId, "Activities", {
-    userId,
     leadId: note.leadId,
     customerId: note.customerId,
     dealId: null,
@@ -58,15 +54,11 @@ export async function createNote(
 export async function deleteNote(
   accessToken: string,
   spreadsheetId: string,
-  userId: string,
   noteId: string,
 ) {
   const note = await store.getById(accessToken, spreadsheetId, "Notes", noteId);
   if (!note) {
     throw new AppError("Note not found", 404);
-  }
-  if (note.userId && note.userId !== userId) {
-    console.warn(`[deleteNote] userId mismatch for note ${noteId}: expected ${userId}, got ${note.userId}. Allowing access.`);
   }
   await store.softDelete(accessToken, spreadsheetId, "Notes", noteId);
 }

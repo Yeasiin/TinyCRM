@@ -40,25 +40,6 @@ export async function list(
     result = result.filter((row) => !row.deletedAt);
   }
 
-  // Fallback for single-user CRM: if userId filter removed everything but sheet has data,
-  // the userId likely changed due to auth system changes. Return all non-deleted rows.
-  // Only apply this fallback when removing the userId filter would yield results,
-  // ensuring we don't bypass legitimate filters like leadId or customerId.
-  if (!includeDeleted && result.length === 0 && filters.userId) {
-    const nonDeletedRows = rows.filter((r) => !r.deletedAt);
-    const filtersWithoutUserId = { ...filters };
-    delete filtersWithoutUserId.userId;
-    const resultWithoutUserId = filterRows(nonDeletedRows, filtersWithoutUserId);
-
-    if (resultWithoutUserId.length > 0) {
-      console.warn(
-        `[sheets-store.list] userId filter (${filters.userId}) removed all rows. ` +
-          `Returning rows without userId filter as fallback.`,
-      );
-      result = resultWithoutUserId;
-    }
-  }
-
   if (options.sortBy) {
     result = sortRows(result, options.sortBy, options.sortOrder);
   }
