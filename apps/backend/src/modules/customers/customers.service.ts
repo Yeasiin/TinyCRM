@@ -16,7 +16,6 @@ export async function listCustomers(
 ) {
   const { search, page = 1, limit = 20 } = filters;
   const result = await store.list(accessToken, spreadsheetId, "Customers", {
-    userId,
     search,
   }, {
     sortBy: "createdAt",

@@ -17,7 +17,6 @@ export async function listLeads(
 ) {
   const { status, search, page = 1, limit = 20 } = filters;
   const result = await store.list(accessToken, spreadsheetId, "Leads", {
-    userId,
     status,
     search,
   }, {

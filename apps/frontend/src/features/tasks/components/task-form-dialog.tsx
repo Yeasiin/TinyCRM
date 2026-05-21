@@ -173,7 +173,7 @@ export function TaskFormDialog({ open, onOpenChange, task }: TaskFormDialogProps
                     <FormLabel>Status</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>

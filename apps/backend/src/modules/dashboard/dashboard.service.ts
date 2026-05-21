@@ -13,11 +13,11 @@ export async function getDashboardStats(
     tasksResult,
     activitiesResult,
   ] = await Promise.all([
-    store.list(accessToken, spreadsheetId, "Leads", { userId }, { sortBy: "createdAt", sortOrder: "desc" }),
-    store.list(accessToken, spreadsheetId, "Customers", { userId }, { sortBy: "createdAt", sortOrder: "desc" }),
-    store.list(accessToken, spreadsheetId, "Deals", { userId }, { sortBy: "createdAt", sortOrder: "desc" }),
-    store.list(accessToken, spreadsheetId, "Tasks", { userId }, { sortBy: "createdAt", sortOrder: "desc" }),
-    store.list(accessToken, spreadsheetId, "Activities", { userId }, { sortBy: "createdAt", sortOrder: "desc" }),
+    store.list(accessToken, spreadsheetId, "Leads", {}, { sortBy: "createdAt", sortOrder: "desc" }),
+    store.list(accessToken, spreadsheetId, "Customers", {}, { sortBy: "createdAt", sortOrder: "desc" }),
+    store.list(accessToken, spreadsheetId, "Deals", {}, { sortBy: "createdAt", sortOrder: "desc" }),
+    store.list(accessToken, spreadsheetId, "Tasks", {}, { sortBy: "createdAt", sortOrder: "desc" }),
+    store.list(accessToken, spreadsheetId, "Activities", {}, { sortBy: "createdAt", sortOrder: "desc" }),
   ]);
 
   const leadList = leadsResult.data;

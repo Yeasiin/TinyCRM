@@ -17,7 +17,6 @@ export async function listDeals(
 ) {
   const { stage, search, page = 1, limit = 20 } = filters;
   const result = await store.list(accessToken, spreadsheetId, "Deals", {
-    userId,
     stage,
     search,
   }, {
@@ -34,9 +33,7 @@ export async function getPipeline(
   spreadsheetId: string,
   userId: string,
 ) {
-  const { data: dealList } = await store.list(accessToken, spreadsheetId, "Deals", {
-    userId,
-  });
+  const { data: dealList } = await store.list(accessToken, spreadsheetId, "Deals", {});
 
   const stages = [
     "new",

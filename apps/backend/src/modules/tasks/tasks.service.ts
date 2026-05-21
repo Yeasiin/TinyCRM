@@ -18,7 +18,6 @@ export async function listTasks(
 ) {
   const { status, leadId, customerId, page = 1, limit = 20 } = filters;
   const result = await store.list(accessToken, spreadsheetId, "Tasks", {
-    userId,
     status,
     leadId,
     customerId,

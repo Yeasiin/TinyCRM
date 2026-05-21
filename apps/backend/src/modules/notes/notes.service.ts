@@ -17,7 +17,6 @@ export async function listNotes(
 ) {
   const { leadId, customerId, page = 1, limit = 20 } = filters;
   const result = await store.list(accessToken, spreadsheetId, "Notes", {
-    userId,
     leadId,
     customerId,
   }, {
