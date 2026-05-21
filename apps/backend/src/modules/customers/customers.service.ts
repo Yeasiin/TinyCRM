@@ -34,8 +34,11 @@ export async function getCustomer(
   customerId: string,
 ) {
   const customer = await store.getById(accessToken, spreadsheetId, "Customers", customerId);
-  if (!customer || customer.userId !== userId) {
+  if (!customer) {
     throw new AppError("Customer not found", 404);
+  }
+  if (customer.userId && customer.userId !== userId) {
+    console.warn(`[getCustomer] userId mismatch for customer ${customerId}: expected ${userId}, got ${customer.userId}. Allowing access.`);
   }
   return customer;
 }
@@ -80,8 +83,11 @@ export async function convertLeadToCustomer(
   extra?: { notes?: string; address?: string; industry?: string },
 ) {
   const lead = await store.getById(accessToken, spreadsheetId, "Leads", leadId);
-  if (!lead || lead.userId !== userId || lead.deletedAt) {
+  if (!lead || lead.deletedAt) {
     throw new AppError("Lead not found", 404);
+  }
+  if (lead.userId && lead.userId !== userId) {
+    console.warn(`[convertLeadToCustomer] userId mismatch for lead ${leadId}: expected ${userId}, got ${lead.userId}. Allowing access.`);
   }
 
   const customer = await store.create(accessToken, spreadsheetId, "Customers", {

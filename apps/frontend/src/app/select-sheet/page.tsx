@@ -28,7 +28,7 @@ interface Sheet {
 export default function SelectSheetPage() {
   const router = useRouter();
   const { isAuthenticated, isPending: authPending } = useAuth();
-  const [newSheetTitle, setNewSheetTitle] = useState("My CRM Data");
+  const [newSheetTitle, setNewSheetTitle] = useState("Tinycrm Data");
 
   useEffect(() => {
     if (!authPending && !isAuthenticated) {
@@ -55,7 +55,7 @@ export default function SelectSheetPage() {
       setLastSpreadsheetId(spreadsheetId);
       setLastSpreadsheetName(data.sheet.name);
       toast.success("Spreadsheet selected");
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     },
     onError: (error) => {
       toast.error("Failed to select spreadsheet", {
@@ -76,7 +76,7 @@ export default function SelectSheetPage() {
       setLastSpreadsheetId(data.id);
       setLastSpreadsheetName(data.name);
       toast.success("New spreadsheet created");
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     },
     onError: (error) => {
       toast.error("Failed to create spreadsheet", {

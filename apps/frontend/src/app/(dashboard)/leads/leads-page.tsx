@@ -18,7 +18,7 @@ export default function LeadsPageClient() {
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [deletingLead, setDeletingLead] = useState<Lead | null>(null);
 
-  const { data, isLoading } = useLeads({
+  const { data, isLoading, error, refetch } = useLeads({
     search: search || undefined,
     status: status === "all" ? undefined : status,
     page,
@@ -65,6 +65,16 @@ export default function LeadsPageClient() {
         }}
         onAdd={handleAdd}
       />
+
+      {error && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+          <p className="font-medium">Failed to load leads</p>
+          <p className="text-sm">{error.message}</p>
+          <Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>
+            Retry
+          </Button>
+        </div>
+      )}
 
       <DataTable
         columns={columns}

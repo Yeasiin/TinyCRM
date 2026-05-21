@@ -1,6 +1,6 @@
 import { google, sheets_v4 } from "googleapis";
 
-const DEFAULT_SPREADSHEET_TITLE = "My CRM Data";
+const DEFAULT_SPREADSHEET_TITLE = "Tinycrm Data";
 
 function getSheetsClient(accessToken: string): sheets_v4.Sheets {
   const auth = new google.auth.OAuth2();

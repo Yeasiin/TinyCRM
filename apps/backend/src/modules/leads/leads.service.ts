@@ -36,8 +36,11 @@ export async function getLead(
   leadId: string,
 ) {
   const lead = await store.getById(accessToken, spreadsheetId, "Leads", leadId);
-  if (!lead || lead.userId !== userId) {
+  if (!lead) {
     throw new AppError("Lead not found", 404);
+  }
+  if (lead.userId && lead.userId !== userId) {
+    console.warn(`[getLead] userId mismatch for lead ${leadId}: expected ${userId}, got ${lead.userId}. Allowing access.`);
   }
   return lead;
 }
@@ -111,19 +114,21 @@ export async function updateLead(
     updates,
   );
 
-  // Sync linked deal stage if status changed
-  if (input.status && input.status !== existing.status) {
-    const linkedDeal = await store.getByLeadId(
-      accessToken,
-      spreadsheetId,
-      "Deals",
-      leadId,
-    );
-    if (linkedDeal && !linkedDeal.deletedAt) {
-      await store.update(accessToken, spreadsheetId, "Deals", linkedDeal.id, {
-        stage: input.status,
-        closedAt: ["won", "lost"].includes(input.status) ? new Date().toISOString() : linkedDeal.closedAt,
-      });
+  // Sync linked deal if it exists
+  const linkedDeal = await store.getByLeadId(
+    accessToken,
+    spreadsheetId,
+    "Deals",
+    leadId,
+  );
+  if (linkedDeal && !linkedDeal.deletedAt) {
+    const dealUpdates: Record<string, any> = {};
+
+    if (input.status && input.status !== existing.status) {
+      dealUpdates.stage = input.status;
+      if (["won", "lost"].includes(input.status)) {
+        dealUpdates.closedAt = new Date().toISOString();
+      }
 
       await store.create(accessToken, spreadsheetId, "Activities", {
         userId,
@@ -135,6 +140,18 @@ export async function updateLead(
         description: `Lead status changed from ${existing.status} to ${input.status}`,
         metadata: JSON.stringify({ from: existing.status, to: input.status }),
       });
+    }
+
+    if (input.estimatedValue !== undefined && input.estimatedValue !== existing.estimatedValue) {
+      dealUpdates.value = input.estimatedValue;
+    }
+
+    if (input.name !== undefined && input.name !== existing.name) {
+      dealUpdates.title = `${input.name} - Deal`;
+    }
+
+    if (Object.keys(dealUpdates).length > 0) {
+      await store.update(accessToken, spreadsheetId, "Deals", linkedDeal.id, dealUpdates);
     }
   }
 

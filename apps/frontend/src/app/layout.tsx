@@ -7,11 +7,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "SalesCRM - Modern Customer Relationship Management",
-    template: "%s | SalesCRM",
+    default: "Tinycrm - Modern Customer Relationship Management",
+    template: "%s | Tinycrm",
   },
   description:
-    "A modern, full-stack Sales CRM built with Next.js, TypeScript, and PostgreSQL. Features lead management, pipeline tracking, customer conversion, tasks, and real-time analytics.",
+    "A modern, full-stack CRM built with Next.js, TypeScript, and Google Sheets. Features lead management, pipeline tracking, customer conversion, tasks, and real-time analytics.",
   keywords: [
     "CRM",
     "Sales",
@@ -20,13 +20,13 @@ export const metadata: Metadata = {
     "Pipeline",
     "SaaS",
   ],
-  authors: [{ name: "SalesCRM" }],
-  creator: "SalesCRM",
+  authors: [{ name: "Tinycrm" }],
+  creator: "Tinycrm",
   metadataBase: new URL("http://localhost:3000"),
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "SalesCRM",
+    siteName: "Tinycrm",
   },
 };
 

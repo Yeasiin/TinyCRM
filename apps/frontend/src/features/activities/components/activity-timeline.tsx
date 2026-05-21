@@ -69,7 +69,7 @@ export function ActivityTimeline({ leadId, customerId }: ActivityTimelineProps) 
                   <Icon className="h-4 w-4" />
                 </div>
 
-                <div className="flex-1 space-y-1">
+                <div className="flex-1 space-y-1 ml-5">
                   <p className="text-sm leading-snug">{activity.description}</p>
                   {activity.metadata && (
                     <div className="text-xs text-muted-foreground bg-muted rounded px-2 py-1 inline-block">

@@ -31,6 +31,7 @@ export function useCreateNote() {
     onSuccess: (_, variables) => {
       toast.success("Note added");
       queryClient.invalidateQueries({ queryKey: queryKeys.notes.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activities.all });
       if (variables.leadId) {
         queryClient.invalidateQueries({
           queryKey: queryKeys.leads.detail(variables.leadId),

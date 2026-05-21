@@ -4,8 +4,11 @@ import type { NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const publicPaths = ["/login", "/register"];
-  const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
+  const publicPaths = ["/", "/login", "/register"];
+  const authRedirectPaths = ["/login", "/register"];
+
+  const isPublicPath = publicPaths.some((path) => pathname === path || (path !== "/" && pathname.startsWith(path)));
+  const isAuthRedirectPath = authRedirectPaths.some((path) => pathname === path || pathname.startsWith(path));
 
   const sessionCookie =
     request.cookies.get("better-auth.session_token") ||
@@ -15,7 +18,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (sessionCookie && isPublicPath) {
+  if (sessionCookie && isAuthRedirectPath) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

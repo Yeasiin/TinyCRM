@@ -66,7 +66,7 @@ export function Header() {
                 onClick={() => setMobileOpen(false)}
               >
                 <LayoutGrid className="h-5 w-5" />
-                SalesCRM
+                Tinycrm
               </Link>
             </div>
             <nav className="flex flex-1 flex-col">
@@ -103,7 +103,7 @@ export function Header() {
         className="mr-8 flex items-center gap-2 text-xl font-bold italic tracking-tight shrink-0"
       >
         <LayoutGrid className="h-5 w-5" />
-        SalesCRM
+        Tinycrm
       </Link>
 
       {/* Desktop Navigation */}

@@ -46,9 +46,10 @@ function deserializeValue(raw: string): any {
   // Try boolean
   if (raw === "true") return true;
   if (raw === "false") return false;
-  // Try number
-  if (/^-?\d+(\.\d+)?$/.test(raw) && !raw.startsWith("0") && raw.length < 16) {
-    const n = Number(raw);
+  // Try number — strip common currency/formatting noise first
+  const cleaned = raw.replace(/[$,\s]/g, "");
+  if (/^-?\d+(\.\d+)?$/.test(cleaned) && cleaned.length < 16) {
+    const n = Number(cleaned);
     if (!isNaN(n)) return n;
   }
   return raw;
@@ -68,6 +69,10 @@ export function filterRows(
           .join(" ")
           .toLowerCase();
         if (!searchable.includes(search)) return false;
+        continue;
+      }
+      // Backward compatibility: old data may have empty userId
+      if (key === "userId" && (row[key] === null || row[key] === undefined || row[key] === "")) {
         continue;
       }
       if (row[key] !== value) return false;

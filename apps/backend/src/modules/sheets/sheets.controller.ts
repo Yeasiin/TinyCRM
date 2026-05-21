@@ -47,7 +47,7 @@ export async function createSheet(req: Request, res: Response) {
   try {
     const { title } = req.body;
     const id = await createCrmSpreadsheet(token, title);
-    res.json({ id, name: title || "My CRM Data" });
+    res.json({ id, name: title || "Tinycrm Data" });
   } catch (e: any) {
     console.error("[createSheet] Error:", e.message || e);
     if (e.response?.data) {

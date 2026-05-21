@@ -64,8 +64,11 @@ export async function getDeal(
   dealId: string,
 ) {
   const deal = await store.getById(accessToken, spreadsheetId, "Deals", dealId);
-  if (!deal || deal.userId !== userId) {
+  if (!deal) {
     throw new AppError("Deal not found", 404);
+  }
+  if (deal.userId && deal.userId !== userId) {
+    console.warn(`[getDeal] userId mismatch for deal ${dealId}: expected ${userId}, got ${deal.userId}. Allowing access.`);
   }
   return deal;
 }

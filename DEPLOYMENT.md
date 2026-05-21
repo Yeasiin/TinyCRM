@@ -1,4 +1,4 @@
-# SalesCRM - Deployment Guide
+# Tinycrm - Deployment Guide
 
 ## Prerequisites
 

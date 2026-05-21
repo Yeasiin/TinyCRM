@@ -6,6 +6,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { createContext, useContext, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  fetcher,
   fetchGoogleAccessToken,
   getSpreadsheetId,
   getLastSpreadsheetId,
@@ -16,6 +17,7 @@ import {
   setLastSpreadsheetName,
   API_URL,
 } from "@/lib/api-client";
+
 
 interface SessionData {
   user: {
@@ -70,25 +72,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Auto-restore last spreadsheet on login
   const restoreMutation = useMutation({
     mutationFn: async (spreadsheetId: string) => {
-      const res = await fetch(`${API_URL}/api/crm/sheets/select`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ spreadsheetId }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Failed to restore sheet" }));
-        throw new Error(err.error || "Failed to restore sheet");
-      }
-      return res.json() as Promise<{ success: boolean; sheet: { id: string; name: string } }>;
+      console.log("[restoreMutation] Restoring sheet:", spreadsheetId);
+      // Use fetcher so X-Google-Access-Token is attached automatically
+      return fetcher<{ success: boolean; sheet: { id: string; name: string } }>(
+        `${API_URL}/api/crm/sheets/select`,
+        {
+          method: "POST",
+          body: JSON.stringify({ spreadsheetId }),
+        },
+      );
     },
     onSuccess: (data) => {
+      console.log("[restoreMutation] Success, sheet:", data.sheet.name);
       setSpreadsheetId(data.sheet.id);
       setSpreadsheetName(data.sheet.name);
+      restoredRef.current = true;
+      // Reload to ensure all queries fetch fresh with the new spreadsheet ID
+      window.location.reload();
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("[restoreMutation] Failed:", error);
       setLastSpreadsheetId(null);
       setLastSpreadsheetName(null);
+      restoredRef.current = true;
     },
   });
 
@@ -98,18 +104,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const currentId = getSpreadsheetId();
     if (currentId) {
+      console.log("[restoreEffect] Current sheet already set:", currentId);
       restoredRef.current = true;
       return;
     }
 
     const lastId = getLastSpreadsheetId();
-    const lastName = getLastSpreadsheetName();
-    if (lastId) {
+    if (!lastId) {
+      console.log("[restoreEffect] No last sheet found");
       restoredRef.current = true;
-      restoreMutation.mutate(lastId);
-    } else {
-      restoredRef.current = true;
+      return;
     }
+
+    console.log("[restoreEffect] Found last sheet:", lastId);
+    restoreMutation.mutate(lastId);
   }, [session?.user]);
 
   return (
