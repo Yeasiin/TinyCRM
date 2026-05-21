@@ -63,7 +63,9 @@ export function FinalCtaSection() {
               disabled={loginMutation.isPending}
               className="gap-2 rounded-lg bg-white text-[#020617] hover:bg-slate-100"
             >
-              {loginMutation.isPending ? "Signing in..." : "Sign in with Google"}
+              {loginMutation.isPending
+                ? "Signing in..."
+                : "Sign in with Google"}
               <ArrowRight className="h-4 w-4" />
             </Button>
           )}
@@ -71,7 +73,7 @@ export function FinalCtaSection() {
             size="lg"
             variant="outline"
             onClick={scrollToDemo}
-            className="gap-2 rounded-lg border-slate-700 text-white hover:bg-slate-800 hover:text-white"
+            className="gap-2 rounded-lg border-slate-700 hover:bg-white bg-slate-800 text-white"
           >
             View Demo
           </Button>

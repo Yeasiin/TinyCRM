@@ -53,9 +53,9 @@ export async function list(
     if (resultWithoutUserId.length > 0) {
       console.warn(
         `[sheets-store.list] userId filter (${filters.userId}) removed all rows. ` +
-          `Returning all non-deleted rows as fallback.`,
+          `Returning rows without userId filter as fallback.`,
       );
-      result = nonDeletedRows;
+      result = resultWithoutUserId;
     }
   }
 

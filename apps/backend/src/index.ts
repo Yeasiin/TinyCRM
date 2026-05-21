@@ -76,6 +76,12 @@ app.use("/api/crm", authGuard, apiRouter);
 // Global error handler
 app.use(errorHandler);
 
+const trustedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(",").map((o) => o.trim())
+  : ["http://localhost:3000"];
+
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🔒 Better Auth trustedOrigins: ${JSON.stringify(trustedOrigins)}`);
+  console.log(`🌐 Express CORS: origin=true (reflects requesting origin)`);
 });

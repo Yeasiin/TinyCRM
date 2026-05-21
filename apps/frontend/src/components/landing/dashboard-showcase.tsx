@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   AreaChart,
   Area,
@@ -26,6 +27,12 @@ import {
   MoreHorizontal,
   GripVertical,
 } from "lucide-react";
+
+function useMounted() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted;
+}
 
 const pipelineData = [
   { name: "New", value: 42 },
@@ -77,6 +84,7 @@ const activities = [
 ];
 
 export function DashboardShowcaseSection() {
+  const mounted = useMounted();
   return (
     <section id="dashboard" className="bg-white py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -188,9 +196,10 @@ export function DashboardShowcaseSection() {
                     </h4>
                     <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <div className="h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={pipelineData} barSize={32}>
+                  <div className="h-48 min-h-[192px]">
+                    {mounted && (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={pipelineData} barSize={32}>
                         <CartesianGrid
                           strokeDasharray="3 3"
                           vertical={false}
@@ -220,7 +229,8 @@ export function DashboardShowcaseSection() {
                           radius={[4, 4, 0, 0]}
                         />
                       </BarChart>
-                    </ResponsiveContainer>
+                      </ResponsiveContainer>
+                    )}
                   </div>
                 </div>
 
@@ -232,9 +242,10 @@ export function DashboardShowcaseSection() {
                     </h4>
                     <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <div className="h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={revenueData}>
+                  <div className="h-48 min-h-[192px]">
+                    {mounted && (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={revenueData}>
                         <defs>
                           <linearGradient
                             id="colorValue"
@@ -293,7 +304,8 @@ export function DashboardShowcaseSection() {
                           fill="url(#colorValue)"
                         />
                       </AreaChart>
-                    </ResponsiveContainer>
+                      </ResponsiveContainer>
+                    )}
                   </div>
                 </div>
               </div>

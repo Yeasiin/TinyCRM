@@ -8,6 +8,7 @@ import {
   SheetContent,
   SheetTrigger,
   SheetClose,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import { authClient } from "@/lib/auth-client";
 import { useAuth } from "@/providers/auth-provider";
@@ -115,6 +116,7 @@ export function LandingNavbar() {
             </Button>
           </SheetTrigger>
           <SheetContent side="right" className="w-72">
+            <SheetTitle className="sr-only">Navigation menu</SheetTitle>
             <div className="flex flex-col gap-6 mt-8">
               {navLinks.map((link) => (
                 <SheetClose asChild key={link.href}>

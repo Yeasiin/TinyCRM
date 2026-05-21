@@ -28,23 +28,23 @@ const sheetRows = [
 
 export function OwnYourDataSection() {
   return (
-    <section id="own-your-data" className="bg-slate-50/50 py-20 sm:py-28">
+    <section id="own-your-data" className="bg-slate-50/50 py-16 sm:py-20 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-12 lg:grid-cols-2 items-center">
+        <div className="grid gap-10 lg:gap-16 lg:grid-cols-2 items-center">
           {/* Left: Spreadsheet Visual */}
-          <div className="order-2 lg:order-1">
-            <div className="rounded-xl border bg-white shadow-lg overflow-hidden">
+          <div className="order-2 lg:order-1 min-w-0">
+            <div className="rounded-xl border bg-white shadow-lg overflow-hidden max-w-full">
               {/* Spreadsheet toolbar mock */}
               <div className="flex items-center gap-2 border-b bg-slate-50 px-3 py-2">
                 <div className="flex items-center gap-1.5">
-                  <div className="h-3 w-3 rounded-sm bg-green-600" />
+                  <div className="h-3 w-3 rounded-sm bg-green-600 shrink-0" />
                   <span className="text-[10px] font-medium text-[#020617]">
                     My CRM Data
                   </span>
                 </div>
-                <div className="h-3 w-px bg-border mx-1" />
+                <div className="h-3 w-px bg-border mx-1 shrink-0" />
                 <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                  <FileSpreadsheet className="h-3 w-3" />
+                  <FileSpreadsheet className="h-3 w-3 shrink-0" />
                   Google Sheets
                 </div>
               </div>
@@ -100,27 +100,27 @@ export function OwnYourDataSection() {
           </div>
 
           {/* Right: Content */}
-          <div className="order-1 lg:order-2 flex flex-col gap-6">
-            <h2 className="text-3xl font-bold tracking-tight text-[#020617] sm:text-4xl">
+          <div className="order-1 lg:order-2 flex flex-col gap-5 min-w-0">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[#020617]">
               Your CRM data is just a{" "}
               <span className="italic">spreadsheet.</span>
             </h2>
 
-            <p className="text-muted-foreground leading-relaxed">
+            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
               Every lead, deal, customer, and task lives inside a Google Spreadsheet
               in your own Google Drive. You can open it anytime, export it, analyze
               it with formulas, or share it with your team.
             </p>
 
-            <p className="text-muted-foreground leading-relaxed">
+            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
               Tinycrm is a beautiful layer on top of Google Sheets. We don't hold
               your data hostage in a proprietary database.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
               <Button
                 variant="outline"
-                className="gap-2 rounded-lg"
+                className="gap-2 rounded-lg w-full sm:w-auto"
                 onClick={() => {
                   toast.info("Connect your Google account to open in Sheets");
                 }}
@@ -130,7 +130,7 @@ export function OwnYourDataSection() {
               </Button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-1 text-xs text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 Stored in your Google Drive
