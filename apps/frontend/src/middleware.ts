@@ -11,7 +11,7 @@ export async function middleware(request: NextRequest) {
   const isAuthRedirectPath = authRedirectPaths.some((path) => pathname === path || pathname.startsWith(path));
 
   const sessionCookie =
-    request.cookies.get("better-auth.session_token") ||
+    request.cookies.get("__Secure-better-auth.session_token") || request.cookies.get("better-auth.session_token") ||
     request.cookies.get("session_token");
 
   if (!sessionCookie && !isPublicPath) {
