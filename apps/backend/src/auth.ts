@@ -21,7 +21,9 @@ export const auth = betterAuth({
   account: {
     storeAccountCookie: true,
   },
-  trustedOrigins: process.env.FRONTEND_URL
-    ? process.env.FRONTEND_URL.split(",").map((o) => o.trim())
-    : ["http://localhost:3000"],
+  // trustedOrigins: process.env.FRONTEND_URL
+  //   ? process.env.FRONTEND_URL.split(",").map((o) => o.trim())
+  //   : ["http://localhost:3000"],
+  trustedOrigins: ["https://tinycrm-v1.vercel.app",
+    "https://tinycrm-kk8o.onrender.com"],
 });
