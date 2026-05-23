@@ -9,7 +9,7 @@ export function setGoogleAccessToken(token: string | null) {
 export async function fetchGoogleAccessToken(): Promise<string | null> {
   if (cachedGoogleToken) return cachedGoogleToken;
   try {
-    console.log("[fetchGoogleAccessToken] Calling /api/auth/get-access-token...");
+    console.log("[fetchGoogleAccessToken] Calling /api/auth/get-access-token...", API_URL);
     const res = await fetch(`${API_URL}/api/auth/get-access-token`, {
       method: "POST",
       credentials: "include",
